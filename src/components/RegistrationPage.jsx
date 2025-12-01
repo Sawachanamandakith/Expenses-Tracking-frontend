@@ -1,30 +1,44 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { message,Select } from "antd";
+import React, { useEffect, useState, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Select } from "antd";
 import { Snackbar, Alert } from '@mui/material';
 import { registration } from "../Services/userService";
 import { FaEye, FaEyeSlash } from "react-icons/fa6";
 
 const Registration = () => {
   // const { Option } = Select;
-  const [userName, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [formData, setFormData] = useState({
-    userName:"",
-    email:"",
-    password:""
+    userName: "",
+    email: "",
+    password: ""
   })
   // const [prefferedSequence, setPrefferedSequence] = useState("");
   const [open, setOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [snackMessage, setSnackMessage] = useState({message:"", severity:""});
+  const [snackMessage, setSnackMessage] = useState({ message: "", severity: "" });
+  const videoRef = useRef(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Ensure video plays and loops properly
+    if (videoRef.current) {
+      videoRef.current.play().catch(error => {
+        console.log("Video autoplay failed:", error);
+      });
+    }
+  }, []);
 
   const handleClose = () => {
     setOpen(false);
   };
+
+  useEffect(() => {
+    if (snackMessage.message !== "") {
+      setOpen(true);
+    }
+  }, [snackMessage]);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -50,12 +64,11 @@ const Registration = () => {
     });
   };
 
-
   const validateForm = (name, value) => {
     const errors = {};
-    switch(name){
+    switch (name) {
       case "userName":
-        if (!name) {
+        if (!value) {
           errors.userName = "User Name is required";
         } else if (value.length < 4 || value.length > 20) {
           errors.userName = "Username must be between 4 and 20 characters.";
@@ -63,8 +76,8 @@ const Registration = () => {
           errors.userName = "Username can only contain letters, numbers, underscores, and hyphens.";
         };
         break;
-      case "email":  
-        if (!name) {
+      case "email":
+        if (!value) {
           errors.email = "Email is required";
         } else {
           const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/; // General email syntax
@@ -76,20 +89,20 @@ const Registration = () => {
           }
         };
         break;
-      case "password":  
-        if (!name) {
+      case "password":
+        if (!value) {
           errors.password = "Password is required";
         } else if (!/^(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{6,}$/.test(value)) {
           errors.password = "Password must be at least 6 characters long and include a special character";
         };
         break;
       default:
-        break;  
+        break;
     };
     // if (!prefferedSequence) {
     //   errors.prefferedSequence = "Preferred Sequence is required";
     // }
-  
+
     return errors;
   };
 
@@ -111,7 +124,7 @@ const Registration = () => {
     const errors = validateFormData(formData);
     setErrors(errors);
     if (Object.keys(errors).length > 0) {
-      let message = {message:"Please correct the highlighted errors.", severity:"error"};
+      let message = { message: "Please correct the highlighted errors.", severity: "error" };
       setSnackMessage(message);
       console.log("Validation Errors:", errors);
       return;
@@ -119,17 +132,18 @@ const Registration = () => {
     setLoading(true);
     try {
       const response = await registration(formData);
-      console.log("jwt token response:",response);
+      console.log("jwt token response:", response);
       localStorage.setItem("user", JSON.stringify(response));
       setSnackMessage({ message: "User successfully registered", severity: "success" });
-      setName("");
-      setEmail("");
-      setPassword("");
-      setLoading(false);
-      //setPrefferedSequence("");
+      setFormData({
+        userName: "",
+        email: "",
+        password: ""
+      });
       setTimeout(() => {
         setLoading(false);
-        window.location.href = "/";
+        navigate("/");
+        // window.location.href = "/";
         //navigate("/login");
       }, 2000);
     } catch (error) {
@@ -141,13 +155,9 @@ const Registration = () => {
         "System Error"; // Default fallback message
 
       setSnackMessage({ message: errorMessage, severity: "error" });
+      setLoading(false);
     }
   };
-  useEffect(() => {
-    if(snackMessage.message !== ""){
-      setOpen(true);
-    }
-  },[snackMessage]);
 
   return (
     <div className="flex h-screen">
@@ -156,10 +166,30 @@ const Registration = () => {
           <div className="loader ease-linear rounded-full border-8 border-t-8 border-[#4B71F0] h-16 w-16"></div>
         </div>
       )}
-      {/* Left Side: Image */}
-      <div className="hidden md:flex w-1/2 items-center justify-center bg-cover bg-center">
-        {/* Optionally, you can add text or overlay styles here */}
-        <div className=" w-full h-3/4 bg-cover bg-center" style={{ backgroundImage: "url('registrationNew.JPG')" }}></div>
+
+      {/* Left Side: Video Background */}
+      <div className="hidden md:flex justify-center items-center w-1/2 bg-black relative overflow-hidden">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute w-full h-full object-cover"
+          poster="/loginnew1.JPG"
+        >
+          <source src="/loginvideo2.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+
+        {/* Dark overlay for better readability */}
+        <div className="absolute inset-0 bg-black bg-opacity-40 z-10"></div>
+
+        {/* Welcome text on video */}
+        <div className="relative z-20 text-white text-center px-8">
+          <h2 className="text-4xl font-bold mb-6">Join Us Today</h2>
+          <p className="text-xl opacity-90">Create your account and start your journey with us</p>
+        </div>
       </div>
 
       {/* Right Side: Form */}
@@ -218,7 +248,7 @@ const Registration = () => {
 
           <div className="relative mt-5">
             <input
-              type={passwordVisible? "text": "password"}
+              type={passwordVisible ? "text" : "password"}
               value={formData.password}
               className={`peer m-0 block h-[58px] w-full border-[1px] border-golden rounded border-solid bg-transparent bg-clip-padding px-3 py-4 text-base font-normal leading-tight text-neutral-700 transition duration-200 ease-linear placeholder:text-transparent focus:border-[#4B71F0] focus:pb-[0.625rem] focus:pt-[1.625rem] focus:text-neutral-700 focus:shadow focus:outline-none peer-focus:text-black [&:not(:placeholder-shown)]:pb-[0.625rem] [&:not(:placeholder-shown)]:pt-[1.625rem]
                 ${errors.password ? "border-error" : ""}`}
@@ -235,12 +265,12 @@ const Registration = () => {
               Password
             </label>
             <button
-                type="button"
-                onClick={()=>setPasswordVisible(!passwordVisible)}
-                className="absolute top-7 right-3 text-gray-600"
-              >
-                {passwordVisible ? <FaEyeSlash /> : <FaEye />}
-              </button>
+              type="button"
+              onClick={() => setPasswordVisible(!passwordVisible)}
+              className="absolute top-7 right-3 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              {passwordVisible ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+            </button>
             {errors.password &&
               <div className="text-error text-sm">
                 {errors.password}
@@ -251,9 +281,10 @@ const Registration = () => {
             onClick={handleRegister}
             type="button"
             className="my-4 block w-full rounded bg-[#4B71F0] hover:bg-[#3e67f0] focus:bg-goldenHover px-6 pb-2 pt-2.5 text-lg font-medium  leading-normal text-white
-             hover:shadow focus:shadow focus:outline-none focus:ring-0 active:bg-[gray] active:shadow"
+             hover:shadow focus:shadow focus:outline-none focus:ring-0 active:bg-[gray] active:shadow transition duration-150 ease-in-out transform hover:scale-[1.02]"
+            disabled={loading}
           >
-            Sign Up
+            {loading ? "Creating Account..." : "Sign Up"}
           </button>
 
           <div className="flex gap-3 px-1">
@@ -263,7 +294,7 @@ const Registration = () => {
             </p>
           </div>
         </form>
-         <Snackbar
+        <Snackbar
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
           open={open}
           onClose={handleClose}
@@ -282,6 +313,3 @@ const Registration = () => {
   );
 };
 export default Registration;
-
-
-
